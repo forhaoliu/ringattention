@@ -1,14 +1,13 @@
 [project]
 name = "ringattention"
-version = "0.1.2"
+version = "0.1.3"
 description = "RingAttention for Transformers with Arbitrarily Large Context."
 license = {text = "Apache-2.0"}
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "numpy",
-    "jax>=0.4.29",
+    "jax>=0.7.0",
     "einops",
-    "flax",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -18,7 +17,7 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/forhaoliu/ringattention"
+Homepage = "https://github.com/haoliuhl/ringattention"
 
 [build-system]
 requires = ["setuptools", "wheel"]

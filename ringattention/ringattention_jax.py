@@ -1,6 +1,4 @@
 import numpy as np
-import flax.linen as nn
-from flax.linen import partitioning
 import jax
 import jax.lax as lax
 import jax.numpy as jnp
@@ -278,7 +276,7 @@ def _chunk_attention_bias(query_chunk_size, key_chunk_size,
     if bias is not None:
         chunk_bias = lax.dynamic_slice(
             bias,
-            start_indices=(0, 0, 0, key_offset),
+            start_indices=(0, 0, query_offset, key_offset),
             slice_sizes=(*bias.shape[:2], min(bias.shape[-2], query_chunk_size), min(bias.shape[-1], key_chunk_size)),
         )
 
@@ -329,24 +327,3 @@ def below_or_on_diag(r, r_blk_size, c, c_blk_size, causal_block_size):
     r = jax.lax.div(r, causal_block_size_q // r_blk_size)
     c = jax.lax.div(c, causal_block_size_k // c_blk_size)
     return ((r + 1) * causal_block_size_q - 1) > (c * causal_block_size_k)
-
-def blockwise_feedforward(feedforward, inputs, chunk_size, static_argnums=(1,),
-                          policy=jax.checkpoint_policies.nothing_saveable, pre_remat=True):
-    if not pre_remat:
-        remat_feedforward = partitioning.remat(feedforward, static_argnums=static_argnums, policy=policy)
-    else:
-        remat_feedforward = feedforward
-    inputs = rearrange(inputs, 'b (c n) d -> b c n d', c=chunk_size)
-    def scan_feedforward(remat_feedforward, carry, hidden_states):
-        outputs = remat_feedforward(hidden_states)
-        return carry, outputs
-    scan_axis = inputs.ndim - 2
-    _, output = nn.scan(
-        scan_feedforward,
-        variable_broadcast="params",
-        split_rngs={"params": False, "dropout": True},
-        in_axes=scan_axis,
-        out_axes=scan_axis,
-    )(remat_feedforward, None, inputs)
-    output = rearrange(output, 'b c n d -> b (c n) d')
-    return output
